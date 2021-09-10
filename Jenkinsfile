@@ -1,4 +1,3 @@
-/* groovylint-disable CompileStatic, LineLength */
 pipeline {
     options {
         disableConcurrentBuilds()
@@ -55,6 +54,30 @@ pipeline {
                 sh 'tools/terraform -v'
                 sh 'tools/terraform init'
                 sh 'tools/terraform apply -auto-approve'
+            }
+        }
+        stage('Destroy?') {
+            agent any // critical, since we don;t want to block agents
+            when {
+                branch 'main'
+            }
+            steps {
+                timeout(time: 60, unit: 'MINUTES') {
+                    input(id: 'Approve Destruction', message: 'Destroy changes?', ok: 'Destroy')
+                }
+            }
+        }
+        stage('Destroy') {
+            agent any
+            when {
+                branch 'main'
+            }
+            steps {
+                sh './setup.sh'
+                sh './generate.sh'
+                sh 'tools/terraform -v'
+                sh 'tools/terraform init'
+                sh 'tools/terraform apply -destroy -auto-approve'
             }
         }
     }
